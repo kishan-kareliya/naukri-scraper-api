@@ -1,8 +1,11 @@
 import express, { Request, Response } from "express";
 import startBot from "./scraper/scraper";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.get("/jobs", async (req: Request, res: Response): Promise<any> => {
   const startTime = Date.now();

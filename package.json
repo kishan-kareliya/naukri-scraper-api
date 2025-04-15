@@ -5,13 +5,15 @@
   "main": "index.ts",
   "scripts": {
     "postinstall": "puppeteer install",
-    "start": "ts-node server.ts",
-    "dev": "nodemon server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "kishan kareliya",
   "license": "ISC",
   "devDependencies": {
+    "@types/dotenv": "^8.2.3",
     "@types/express": "^5.0.1",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^22.14.1",
@@ -23,6 +25,7 @@
   "dependencies": {
     "@2captcha/captcha-solver": "^1.3.0",
     "axios": "^1.8.4",
+    "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsdom": "^26.1.0",
     "puppeteer": "^24.6.1",
