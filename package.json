@@ -7,7 +7,7 @@
     "postinstall": "puppeteer install",
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "node dist/server.js",
+    "dev": "nodemon server.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "kishan kareliya",
