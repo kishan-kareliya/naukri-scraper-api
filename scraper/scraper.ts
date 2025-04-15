@@ -57,6 +57,7 @@ async function startBot(
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    executablePath: puppeteer.executablePath(),
     defaultViewport: {
       width: 1280 + Math.floor(Math.random() * 100),
       height: 800 + Math.floor(Math.random() * 100),
