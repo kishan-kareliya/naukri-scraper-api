@@ -6,6 +6,10 @@ import parseHtmlToText from "./htmlParser";
 
 puppeteer.use(StealthPlugin());
 
+const log = (level: "INFO" | "WARN" | "ERROR", message: string) => {
+  console.log(`[${level}] ${message}`);
+};
+
 interface Job {
   title: string | null;
   link: string | null;
@@ -27,6 +31,7 @@ async function extractJobDescription(
   await page.setUserAgent(userAgent.toString());
 
   try {
+    log("INFO", `Navigating to job description page: ${url}`);
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 0 });
 
     await delay(1000 + Math.random() * 3000);
@@ -38,12 +43,14 @@ async function extractJobDescription(
     );
     const descriptionText = parseHtmlToText(rawHtml);
 
-    await page.close();
+    log("INFO", `✅ Description extracted successfully from ${url}`);
     return descriptionText;
-  } catch (error) {
-    console.warn(`⚠️ Failed to extract description for: ${url}`);
-    await page.close();
+  } catch (error: any) {
+    log("WARN", `⚠️ Failed to extract description for: ${url}`);
+    log("ERROR", `Error: ${error.message}`);
     return "Description not available";
+  } finally {
+    await page.close();
   }
 }
 
@@ -54,6 +61,7 @@ async function startBot(
 ): Promise<Job[]> {
   const userAgent = new UserAgent({ deviceCategory: "desktop" });
 
+  log("INFO", `Launching browser...`);
   const browser = await puppeteer.launch({
     headless: true,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -66,110 +74,121 @@ async function startBot(
 
   const page = await browser.newPage();
   await page.setUserAgent(userAgent.toString());
+  log("INFO", `User-Agent set: ${userAgent.toString()}`);
 
-  console.log("User-Agent:", userAgent.toString());
-
-  await page.goto("https://www.naukri.com", {
-    waitUntil: "networkidle2",
-    timeout: 0,
-  });
-
-  await delay(2000 + Math.random() * 1000);
-
-  await page.click(".keywordSugg .suggestor-input");
-  await page.type(".keywordSugg .suggestor-input", jobRole, {
-    delay: randomDelay(),
-  });
-
-  await page.click(".locationSugg .suggestor-input");
-  await page.type(".locationSugg .suggestor-input", jobLocation, {
-    delay: randomDelay(),
-  });
-
-  await delay(2000);
-  await page.waitForSelector(".qsbSubmit", { visible: true });
-
-  await page.evaluate(() => {
-    const btn = document.querySelector(".qsbSubmit");
-    if (btn) {
-      btn.scrollIntoView({ behavior: "smooth", block: "center" });
-      const event = new MouseEvent("click", {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-      });
-      btn.dispatchEvent(event);
-    }
-  });
-
-  await delay(4000);
-  await simulateHumanBehavior(page);
-  await delay(4000);
-
-  const jobCardHandles = await page.$$(".srp-jobtuple-wrapper");
-  const jobs: Job[] = [];
-
-  for (let i = 0; i < Math.min(limit, jobCardHandles.length); i++) {
-    const card = jobCardHandles[i];
-
-    const job: Job = await card.evaluate((el) => {
-      const getText = (selector: string): string | null => {
-        const element = el.querySelector(selector) as HTMLElement | null;
-        return element?.innerText?.trim() || null;
-      };
-
-      const getHref = (selector: string): string | null => {
-        const element = el.querySelector(selector) as HTMLAnchorElement | null;
-        return element?.href || null;
-      };
-
-      const getTags = (): string[] => {
-        return Array.from(el.querySelectorAll(".tags-gt li")).map((tag) =>
-          (tag as HTMLElement).innerText.trim()
-        );
-      };
-
-      return {
-        title: getText("h2 > a.title"),
-        link: getHref("h2 > a.title"),
-        company: getText(".comp-name"),
-        experience: getText(".expwdth"),
-        salary: getText(".sal-wrap span[title]"),
-        location: getText(".locWdth"),
-        tags: getTags(),
-        postedDate: getText(".job-post-day"),
-      };
+  try {
+    log("INFO", "Navigating to Naukri home page...");
+    await page.goto("https://www.naukri.com", {
+      waitUntil: "networkidle2",
+      timeout: 0,
     });
 
-    console.log(`✅ Extracted job ${i + 1}: ${job.title}`);
-    await delay(3000 + Math.random() * 3000);
+    log("INFO", "Typing job role and location...");
+    await delay(2000 + Math.random() * 1000);
 
-    jobs.push(job);
-    job.description = await extractJobDescription(
-      browser,
-      userAgent,
-      job.link || ""
-    );
+    await page.click(".keywordSugg .suggestor-input");
+    await page.type(".keywordSugg .suggestor-input", jobRole, {
+      delay: randomDelay(),
+    });
 
-    await delay(1000 + Math.random() * 1000);
+    await page.click(".locationSugg .suggestor-input");
+    await page.type(".locationSugg .suggestor-input", jobLocation, {
+      delay: randomDelay(),
+    });
+
+    await delay(2000);
+    await page.waitForSelector(".qsbSubmit", { visible: true });
+
+    await page.evaluate(() => {
+      const btn = document.querySelector(".qsbSubmit");
+      if (btn) {
+        btn.scrollIntoView({ behavior: "smooth", block: "center" });
+        const event = new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+        });
+        btn.dispatchEvent(event);
+      }
+    });
+
+    log("INFO", "Search button clicked. Waiting for results...");
+    await delay(4000);
+    await simulateHumanBehavior(page);
+    await delay(4000);
+
+    const jobCardHandles = await page.$$(".srp-jobtuple-wrapper");
+    log("INFO", `Found ${jobCardHandles.length} job cards`);
+
+    const jobs: Job[] = [];
+
+    for (let i = 0; i < Math.min(limit, jobCardHandles.length); i++) {
+      const card = jobCardHandles[i];
+
+      const job: Job = await card.evaluate((el) => {
+        const getText = (selector: string): string | null => {
+          const element = el.querySelector(selector) as HTMLElement | null;
+          return element?.innerText?.trim() || null;
+        };
+
+        const getHref = (selector: string): string | null => {
+          const element = el.querySelector(
+            selector
+          ) as HTMLAnchorElement | null;
+          return element?.href || null;
+        };
+
+        const getTags = (): string[] => {
+          return Array.from(el.querySelectorAll(".tags-gt li")).map((tag) =>
+            (tag as HTMLElement).innerText.trim()
+          );
+        };
+
+        return {
+          title: getText("h2 > a.title"),
+          link: getHref("h2 > a.title"),
+          company: getText(".comp-name"),
+          experience: getText(".expwdth"),
+          salary: getText(".sal-wrap span[title]"),
+          location: getText(".locWdth"),
+          tags: getTags(),
+          postedDate: getText(".job-post-day"),
+        };
+      });
+
+      log("INFO", `Extracted job ${i + 1}: ${job.title}`);
+      jobs.push(job);
+
+      await delay(3000 + Math.random() * 3000);
+      job.description = await extractJobDescription(
+        browser,
+        userAgent,
+        job.link || ""
+      );
+
+      await delay(1000 + Math.random() * 1000);
+    }
+
+    log("INFO", "✅ All jobs extracted successfully.");
+    return jobs;
+  } catch (error: any) {
+    log("ERROR", `❌ Bot crashed: ${error.message}`);
+    return [];
+  } finally {
+    await browser.close();
+    log("INFO", "Browser closed.");
   }
-
-  await browser.close();
-
-  return jobs;
 }
 
-// Utility delay function
+// Delay utilities
 function delay(time: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
 
-// Delay between keystrokes
 function randomDelay(): number {
   return Math.floor(Math.random() * (300 - 150 + 1)) + 150;
 }
 
-// Simulate human scrolling and mouse movements
 async function simulateHumanBehavior(page: Page): Promise<void> {
   const mouse = page.mouse;
   const width = await page.evaluate(() => window.innerWidth);
@@ -179,11 +198,6 @@ async function simulateHumanBehavior(page: Page): Promise<void> {
     const x = Math.floor(Math.random() * width);
     const y = Math.floor(Math.random() * height);
     await mouse.move(x, y, { steps: Math.floor(Math.random() * 20 + 10) });
-
-    await mouse.move(
-      x + Math.floor(Math.random() * 5),
-      y + Math.floor(Math.random() * 5)
-    );
     await delay(randomDelay());
   }
 
