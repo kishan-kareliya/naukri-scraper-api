@@ -6,7 +6,7 @@ import axios from "axios";
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = parseInt(process.env.PORT || "3000", 10);
 app.use(express.json());
 
 app.post("/jobs", async (req: Request, res: Response): Promise<any> => {
@@ -46,6 +46,6 @@ app.post("/jobs", async (req: Request, res: Response): Promise<any> => {
   }
 });
 
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
