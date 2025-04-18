@@ -1,11 +1,15 @@
-FROM ghcr.io/puppeteer/puppeteer:24.6.1
+FROM node:20-slim
 
-# Create app directory
+# Install dependencies for puppeteer
+RUN apt-get update && apt-get install -y \
+    chromium && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
 WORKDIR /usr/src/app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy all project files
 COPY . .

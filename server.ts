@@ -9,6 +9,10 @@ const app = express();
 const port = parseInt(process.env.PORT || "3000", 10);
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("Server is up and running!");
+});
+
 app.post("/jobs", async (req: Request, res: Response): Promise<any> => {
   const { role, location, limit, webhookUrl } = req.body;
 
