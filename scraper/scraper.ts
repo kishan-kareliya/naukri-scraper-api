@@ -34,9 +34,10 @@ async function extractJobDescription(
     log("INFO", `Navigating to job description page: ${url}`);
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 0 });
 
-    await delay(1000 + Math.random() * 3000);
-    await simulateHumanBehavior(page);
+    // await delay(1000 + Math.random() * 3000);
+    // await simulateHumanBehavior(page);
 
+    await page.waitForSelector(".styles_JDC__dang-inner-html__h0K4t");
     const rawHtml = await page.$eval(
       ".styles_JDC__dang-inner-html__h0K4t",
       (el) => el.innerHTML
@@ -84,7 +85,7 @@ async function startBot(
     });
 
     log("INFO", "Typing job role and location...");
-    await delay(2000 + Math.random() * 1000);
+    // await delay(2000 + Math.random() * 1000);
 
     await page.click(".keywordSugg .suggestor-input");
     await page.type(".keywordSugg .suggestor-input", jobRole, {
@@ -96,7 +97,7 @@ async function startBot(
       delay: randomDelay(),
     });
 
-    await delay(2000);
+    // await delay(2000);
     await page.waitForSelector(".qsbSubmit", { visible: true });
 
     await page.evaluate(() => {
@@ -113,10 +114,11 @@ async function startBot(
     });
 
     log("INFO", "Search button clicked. Waiting for results...");
-    await delay(4000);
-    await simulateHumanBehavior(page);
-    await delay(4000);
+    // await delay(4000);
+    // await simulateHumanBehavior(page);
+    // await delay(4000);
 
+    await page.waitForSelector(".srp-jobtuple-wrapper");
     const jobCardHandles = await page.$$(".srp-jobtuple-wrapper");
     log("INFO", `Found ${jobCardHandles.length} job cards`);
 
@@ -159,14 +161,14 @@ async function startBot(
       log("INFO", `Extracted job ${i + 1}: ${job.title}`);
       jobs.push(job);
 
-      await delay(3000 + Math.random() * 3000);
+      // await delay(3000 + Math.random() * 3000);
       job.description = await extractJobDescription(
         browser,
         userAgent,
         job.link || ""
       );
 
-      await delay(1000 + Math.random() * 1000);
+      // await delay(1000 + Math.random() * 1000);
     }
 
     log("INFO", "✅ All jobs extracted successfully.");
