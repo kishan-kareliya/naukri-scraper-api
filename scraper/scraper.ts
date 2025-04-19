@@ -64,7 +64,7 @@ async function startBot(
 
   log("INFO", `Launching browser...`);
   const browser = await puppeteer.launch({
-    headless: true,
+    headless: false,
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
     executablePath: puppeteer.executablePath(),
     defaultViewport: {
